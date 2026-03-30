@@ -1,0 +1,10 @@
+body { background: #0f172a; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+.main-container { width: 380px; background: #1e293b; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: none; background: #334155; color: white; box-sizing: border-box; }
+button { width: 100%; padding: 12px; background: #3b82f6; border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; }
+#message-area { height: 350px; overflow-y: auto; display: flex; flex-direction: column; padding: 10px; background: #0f172a; border-radius: 8px; margin: 15px 0; }
+.msg-bubble { max-width: 75%; padding: 8px 12px; margin-bottom: 10px; border-radius: 10px; font-size: 14px; word-wrap: break-word; }
+.my-msg { align-self: flex-end; background: #2563eb; border-bottom-right-radius: 2px; }
+.other-msg { align-self: flex-start; background: #334155; border-bottom-left-radius: 2px; }
+small { font-size: 10px; opacity: 0.7; }
+.input-row { display: flex; gap: 5px; }

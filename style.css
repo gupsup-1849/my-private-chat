@@ -1,15 +1,11 @@
-#walkieBtn {
-    background: #e74c3c;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 20px;
-    margin-left: 5px;
-    transition: 0.3s;
-}
-
-#walkieBtn:active {
-    transform: scale(1.2);
-}
+body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
+#chat-container { background: white; width: 100%; max-width: 400px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; }
+.header { background: #075e54; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+#messages { height: 400px; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+.controls { padding: 15px; display: flex; gap: 10px; background: #eee; }
+input { flex: 1; border: none; padding: 10px; border-radius: 20px; }
+button { border: none; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; }
+#sendBtn { border-radius: 5px; width: auto; background: #25d366; color: white; padding: 0 15px; }
+.mic-on { background: #ff5252; color: white; width: 80px; border-radius: 20px; }
+.mic-off { background: #075e54; color: white; width: 80px; border-radius: 20px; }
+#settingsBtn { background: none; color: white; width: auto; font-size: 12px; }

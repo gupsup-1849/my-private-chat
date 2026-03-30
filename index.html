@@ -1,106 +1,104 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <title>GupShup Pro: Call & Chat</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GupShup Private 🔒</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="chat-container" style="display:none; max-width: 500px; margin: 20px auto; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-        <h2 style="text-align: center; color: #2c3e50;">GupShup Private Room 🔒</h2>
+    <div id="chat-container" style="display:none;">
+        <div class="header">
+            <h2 id="room-title">Private Room 🔒</h2>
+            <button onclick="changeMyName()" id="settingsBtn">⚙️ Change Name</button>
+        </div>
         
-        <div id="messages" style="height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; background: #fdfdfd; border-radius: 10px; margin-bottom: 10px; box-shadow: inset 0 0 10px rgba(0,0,0,0.05);"></div>
+        <div id="messages"></div>
 
-        <div class="controls" style="display: flex; gap: 10px; align-items: center;">
-            <input id="messageInput" type="text" placeholder="Type a message..." style="flex-grow: 1; padding: 12px; border-radius: 25px; border: 1px solid #ccc; outline: none;">
-            <button id="sendBtn" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold;">Send</button>
-            <button id="walkieBtn" style="background: #e74c3c; color: white; border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 20px; transition: 0.3s; display: flex; align-items: center; justify-content: center;">🎤</button>
+        <div class="controls">
+            <input id="messageInput" placeholder="Type message...">
+            <button id="sendBtn">Send</button>
+            <button id="walkieBtn" class="mic-off">🎤</button>
         </div>
     </div>
 
-    <audio id="remoteAudio" autoplay></audio>
-
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // 1. SECRET CODE & NAME SETUP
-        const SECRET_CODE = "1234"; // Aap ise badal sakte hain
+        const SECRET_CODE = "1234"; 
         let userPass = prompt("Enter Secret Code:");
 
         if (userPass === SECRET_CODE) {
-            let myName = prompt("Apna naam likhiye:");
-            if(!myName) myName = "Anjaan";
-
-            // Code sahi hone par chat dikhao
+            let myName = localStorage.getItem("chatName") || prompt("Apna naam likhiye:") || "User";
+            localStorage.setItem("chatName", myName);
+            
             document.getElementById('chat-container').style.display = 'block';
-
             const socket = io();
-            const msgInput = document.getElementById('messageInput');
-            const sendBtn = document.getElementById('sendBtn');
             const messagesDiv = document.getElementById('messages');
             const walkieBtn = document.getElementById('walkieBtn');
-            const remoteAudio = document.getElementById('remoteAudio');
 
-            // --- 2. TEXT CHAT LOGIC ---
-            sendBtn.onclick = () => {
-                const msg = msgInput.value;
-                if(msg.trim()) {
-                    socket.emit('chat message', { user: myName, text: msg });
-                    msgInput.value = '';
+            // --- NAME CHANGE FUNCTION ---
+            window.changeMyName = () => {
+                let newName = prompt("Naya naam likhiye:", myName);
+                if(newName) {
+                    myName = newName;
+                    localStorage.setItem("chatName", myName);
+                    alert("Naam badal gaya: " + myName);
                 }
             };
 
-            // Enter key support
-            msgInput.onkeypress = (e) => { if(e.key === 'Enter') sendBtn.click(); };
+            // --- FAST CHAT ---
+            document.getElementById('sendBtn').onclick = () => {
+                const msg = document.getElementById('messageInput').value;
+                if(msg.trim()) {
+                    socket.emit('chat message', { user: myName, text: msg });
+                    document.getElementById('messageInput').value = '';
+                }
+            };
 
             socket.on('chat message', (data) => {
                 const item = document.createElement('div');
-                item.style.margin = "8px 0";
-                item.style.padding = "8px 12px";
-                item.style.background = "#fff";
-                item.style.borderRadius = "10px";
-                item.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
-                item.innerHTML = `<strong style="color:#2980b9;">${data.user}:</strong> ${data.text}`;
+                item.innerHTML = `<strong>${data.user}:</strong> ${data.text}`;
                 messagesDiv.appendChild(item);
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
             });
 
-            // --- 3. WALKIE-TALKIE (ONE-TAP TOGGLE) ---
-            let mediaRecorder;
-            let isRecording = false;
+            // --- REAL-TIME VOICE (CALL MODE) ---
+            let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            let isCalling = false;
 
             navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                mediaRecorder = new MediaRecorder(stream);
-                
-                mediaRecorder.ondataavailable = e => {
-                    socket.emit('voice-stream', e.data);
+                const source = audioCtx.createMediaStreamSource(stream);
+                const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+
+                source.connect(processor);
+                processor.connect(audioCtx.destination);
+
+                processor.onaudioprocess = (e) => {
+                    if (isCalling) {
+                        const inputData = e.inputBuffer.getChannelData(0);
+                        socket.emit('voice-data', inputData); // Raw data bhej raha hai (Super Fast)
+                    }
                 };
 
                 walkieBtn.onclick = () => {
-                    if (!isRecording) {
-                        mediaRecorder.start();
-                        isRecording = true;
-                        walkieBtn.style.background = "#2ecc71"; // Green when ON
-                        walkieBtn.style.boxShadow = "0 0 15px #2ecc71";
-                        walkieBtn.innerText = "🔊"; 
-                    } else {
-                        mediaRecorder.stop();
-                        isRecording = false;
-                        walkieBtn.style.background = "#e74c3c"; // Red when OFF
-                        walkieBtn.style.boxShadow = "none";
-                        walkieBtn.innerText = "🎤";
-                    }
+                    isCalling = !isCalling;
+                    walkieBtn.className = isCalling ? "mic-on" : "mic-off";
+                    walkieBtn.innerText = isCalling ? "🔊 ON" : "🎤 OFF";
+                    if(audioCtx.state === 'suspended') audioCtx.resume();
                 };
-            }).catch(err => alert("Mic allow karein warna baat nahi ho payegi!"));
+            });
 
-            socket.on('voice-stream', (data) => {
-                const blob = new Blob([data], { type: 'audio/webm' });
-                remoteAudio.src = URL.createObjectURL(blob);
-                remoteAudio.play();
+            socket.on('voice-data', (data) => {
+                // Dusre phone par turant play karne ke liye
+                const buffer = audioCtx.createBuffer(1, data.length, audioCtx.sampleRate);
+                buffer.getChannelData(0).set(data);
+                const source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioCtx.destination);
+                source.start();
             });
 
         } else {
-            alert("Galat Code! Wapas jao.");
+            alert("Wrong Code!");
             window.location.reload();
         }
     </script>

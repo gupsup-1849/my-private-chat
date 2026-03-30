@@ -1,20 +1,34 @@
 const express = require('express');
 const app = express();
-const http = require('http').createServer(app);
+const http = require('http').Server(app);
 const io = require('socket.io')(http);
+const path = require('path');
 
 app.use(express.static(__dirname));
 
-io.on('connection', (socket) => {
-    socket.on('join-room', (room) => socket.join(room));
-    socket.on('private-message', (data) => {
-        io.to(data.room).emit('chat-message', data);
-    });
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Is line ko Line 15 par likhein
-const PORT = process.env.PORT || 3000;
+io.on('connection', (socket) => {
+  console.log('A user connected');
 
+  // Text message handle karein
+  socket.on('chat message', (msg) => {
+    io.emit('chat message', msg);
+  });
+
+  // Voice stream handle karein
+  socket.on('voice-stream', (data) => {
+    socket.broadcast.emit('voice-stream', data);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected');
+  });
+});
+
+const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
-    console.log('Server is LIVE on port: ' + PORT);
+  console.log(`Server running on port ${PORT}`);
 });

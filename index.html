@@ -1,16 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Private Chat & Walkie-Talkie</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GupShup: Chat & Walkie-Talkie</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Chota sa UI fix taaki dono cheezein sahi dikhein */
+        #messages { height: 300px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; padding: 10px; background: #f9f9f9; border-radius: 8px; }
+        .controls { display: flex; gap: 5px; align-items: center; }
+        #messageInput { flex-grow: 1; padding: 10px; border-radius: 5px; border: 1px solid #ddd; }
+        #sendBtn { padding: 10px 15px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
 </head>
 <body>
-    <div id="chat-container">
+    <div id="chat-container" style="max-width: 400px; margin: 20px auto; font-family: sans-serif;">
+        <h2 style="text-align: center; color: #2c3e50;">GupShup Pro 🚀</h2>
+        
         <div id="messages"></div>
+
         <div class="controls">
-            <input id="messageInput" placeholder="Type a message...">
+            <input id="messageInput" type="text" placeholder="Type a message...">
             <button id="sendBtn">Send</button>
-            <button id="walkieBtn">🎤</button>
+            <button id="walkieBtn" title="Hold to Speak">🎤</button>
         </div>
     </div>
 
@@ -25,22 +37,33 @@
         const walkieBtn = document.getElementById('walkieBtn');
         const remoteAudio = document.getElementById('remoteAudio');
 
-        // --- Text Chat Logic ---
+        // --- 1. TEXT CHAT LOGIC (Wapas aa gaya!) ---
         sendBtn.onclick = () => {
             const msg = msgInput.value;
-            if(msg) {
+            if(msg.trim() !== "") {
                 socket.emit('chat message', msg);
                 msgInput.value = '';
             }
         };
 
-        socket.on('chat message', (msg) => {
-            const item = document.createElement('div');
-            item.textContent = msg;
-            messagesDiv.appendChild(item);
+        // Enter key se message bhejne ke liye
+        msgInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendBtn.click();
         });
 
-        // --- Walkie-Talkie Logic ---
+        socket.on('chat message', (msg) => {
+            const item = document.createElement('div');
+            item.style.padding = "5px 10px";
+            item.style.margin = "5px 0";
+            item.style.background = "#fff";
+            item.style.borderRadius = "5px";
+            item.style.boxShadow = "0 1px 2px rgba(0,0,0,0.1)";
+            item.textContent = msg;
+            messagesDiv.appendChild(item);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Auto scroll to bottom
+        });
+
+        // --- 2. WALKIE-TALKIE LOGIC ---
         let mediaRecorder;
 
         navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
@@ -50,16 +73,30 @@
                 socket.emit('voice-stream', event.data);
             };
 
-            walkieBtn.onmousedown = () => {
+            // Mobile aur Desktop dono ke liye events
+            const startRec = () => {
                 mediaRecorder.start();
-                walkieBtn.style.background = "#2ecc71"; // Green while speaking
+                walkieBtn.style.background = "#2ecc71"; // Green
+                walkieBtn.style.transform = "scale(1.2)";
             };
 
-            walkieBtn.onmouseup = () => {
-                mediaRecorder.stop();
-                walkieBtn.style.background = "#e74c3c"; // Red back
+            const stopRec = () => {
+                if (mediaRecorder.state !== "inactive") {
+                    mediaRecorder.stop();
+                    walkieBtn.style.background = "#e74c3c"; // Red
+                    walkieBtn.style.transform = "scale(1)";
+                }
             };
-        }).catch(err => console.error("Mic access denied:", err));
+
+            walkieBtn.onmousedown = startRec;
+            walkieBtn.onmouseup = stopRec;
+            walkieBtn.ontouchstart = startRec; // Mobile support
+            walkieBtn.ontouchend = stopRec;   // Mobile support
+
+        }).catch(err => {
+            console.error("Mic error:", err);
+            alert("Please allow Microphone access!");
+        });
 
         socket.on('voice-stream', (data) => {
             const audioBlob = new Blob([data], { type: 'audio/webm' });

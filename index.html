@@ -3,26 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GupShup: Chat & Walkie-Talkie</title>
+    <title>GupShup Private 🔒</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* Chota sa UI fix taaki dono cheezein sahi dikhein */
-        #messages { height: 300px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; padding: 10px; background: #f9f9f9; border-radius: 8px; }
-        .controls { display: flex; gap: 5px; align-items: center; }
-        #messageInput { flex-grow: 1; padding: 10px; border-radius: 5px; border: 1px solid #ddd; }
-        #sendBtn { padding: 10px 15px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    </style>
 </head>
 <body>
-    <div id="chat-container" style="max-width: 400px; margin: 20px auto; font-family: sans-serif;">
-        <h2 style="text-align: center; color: #2c3e50;">GupShup Pro 🚀</h2>
+    <div id="chat-container" style="display:none; max-width: 500px; margin: 20px auto; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        <h2 style="text-align: center; color: #2c3e50;">GupShup Private Room 🔒</h2>
         
-        <div id="messages"></div>
+        <div id="messages" style="height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; background: #fdfdfd; border-radius: 10px; margin-bottom: 10px; box-shadow: inset 0 0 10px rgba(0,0,0,0.05);"></div>
 
-        <div class="controls">
-            <input id="messageInput" type="text" placeholder="Type a message...">
-            <button id="sendBtn">Send</button>
-            <button id="walkieBtn" title="Hold to Speak">🎤</button>
+        <div class="controls" style="display: flex; gap: 10px; align-items: center;">
+            <input id="messageInput" type="text" placeholder="Type a message..." style="flex-grow: 1; padding: 12px; border-radius: 25px; border: 1px solid #ccc; outline: none;">
+            <button id="sendBtn" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold;">Send</button>
+            <button id="walkieBtn" style="background: #e74c3c; color: white; border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 20px; transition: 0.3s; display: flex; align-items: center; justify-content: center;">🎤</button>
         </div>
     </div>
 
@@ -30,79 +23,86 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
-        const msgInput = document.getElementById('messageInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const messagesDiv = document.getElementById('messages');
-        const walkieBtn = document.getElementById('walkieBtn');
-        const remoteAudio = document.getElementById('remoteAudio');
+        // 1. SECRET CODE & NAME SETUP
+        const SECRET_CODE = "1234"; // Aap ise badal sakte hain
+        let userPass = prompt("Enter Secret Code:");
 
-        // --- 1. TEXT CHAT LOGIC (Wapas aa gaya!) ---
-        sendBtn.onclick = () => {
-            const msg = msgInput.value;
-            if(msg.trim() !== "") {
-                socket.emit('chat message', msg);
-                msgInput.value = '';
-            }
-        };
+        if (userPass === SECRET_CODE) {
+            let myName = prompt("Apna naam likhiye:");
+            if(!myName) myName = "Anjaan";
 
-        // Enter key se message bhejne ke liye
-        msgInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendBtn.click();
-        });
+            // Code sahi hone par chat dikhao
+            document.getElementById('chat-container').style.display = 'block';
 
-        socket.on('chat message', (msg) => {
-            const item = document.createElement('div');
-            item.style.padding = "5px 10px";
-            item.style.margin = "5px 0";
-            item.style.background = "#fff";
-            item.style.borderRadius = "5px";
-            item.style.boxShadow = "0 1px 2px rgba(0,0,0,0.1)";
-            item.textContent = msg;
-            messagesDiv.appendChild(item);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Auto scroll to bottom
-        });
+            const socket = io();
+            const msgInput = document.getElementById('messageInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const messagesDiv = document.getElementById('messages');
+            const walkieBtn = document.getElementById('walkieBtn');
+            const remoteAudio = document.getElementById('remoteAudio');
 
-        // --- 2. WALKIE-TALKIE LOGIC ---
-        let mediaRecorder;
-
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-            mediaRecorder = new MediaRecorder(stream);
-
-            mediaRecorder.ondataavailable = event => {
-                socket.emit('voice-stream', event.data);
-            };
-
-            // Mobile aur Desktop dono ke liye events
-            const startRec = () => {
-                mediaRecorder.start();
-                walkieBtn.style.background = "#2ecc71"; // Green
-                walkieBtn.style.transform = "scale(1.2)";
-            };
-
-            const stopRec = () => {
-                if (mediaRecorder.state !== "inactive") {
-                    mediaRecorder.stop();
-                    walkieBtn.style.background = "#e74c3c"; // Red
-                    walkieBtn.style.transform = "scale(1)";
+            // --- 2. TEXT CHAT LOGIC ---
+            sendBtn.onclick = () => {
+                const msg = msgInput.value;
+                if(msg.trim()) {
+                    socket.emit('chat message', { user: myName, text: msg });
+                    msgInput.value = '';
                 }
             };
 
-            walkieBtn.onmousedown = startRec;
-            walkieBtn.onmouseup = stopRec;
-            walkieBtn.ontouchstart = startRec; // Mobile support
-            walkieBtn.ontouchend = stopRec;   // Mobile support
+            // Enter key support
+            msgInput.onkeypress = (e) => { if(e.key === 'Enter') sendBtn.click(); };
 
-        }).catch(err => {
-            console.error("Mic error:", err);
-            alert("Please allow Microphone access!");
-        });
+            socket.on('chat message', (data) => {
+                const item = document.createElement('div');
+                item.style.margin = "8px 0";
+                item.style.padding = "8px 12px";
+                item.style.background = "#fff";
+                item.style.borderRadius = "10px";
+                item.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
+                item.innerHTML = `<strong style="color:#2980b9;">${data.user}:</strong> ${data.text}`;
+                messagesDiv.appendChild(item);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            });
 
-        socket.on('voice-stream', (data) => {
-            const audioBlob = new Blob([data], { type: 'audio/webm' });
-            const audioUrl = URL.createObjectURL(audioBlob);
-            remoteAudio.src = audioUrl;
-        });
+            // --- 3. WALKIE-TALKIE (ONE-TAP TOGGLE) ---
+            let mediaRecorder;
+            let isRecording = false;
+
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+                
+                mediaRecorder.ondataavailable = e => {
+                    socket.emit('voice-stream', e.data);
+                };
+
+                walkieBtn.onclick = () => {
+                    if (!isRecording) {
+                        mediaRecorder.start();
+                        isRecording = true;
+                        walkieBtn.style.background = "#2ecc71"; // Green when ON
+                        walkieBtn.style.boxShadow = "0 0 15px #2ecc71";
+                        walkieBtn.innerText = "🔊"; 
+                    } else {
+                        mediaRecorder.stop();
+                        isRecording = false;
+                        walkieBtn.style.background = "#e74c3c"; // Red when OFF
+                        walkieBtn.style.boxShadow = "none";
+                        walkieBtn.innerText = "🎤";
+                    }
+                };
+            }).catch(err => alert("Mic allow karein warna baat nahi ho payegi!"));
+
+            socket.on('voice-stream', (data) => {
+                const blob = new Blob([data], { type: 'audio/webm' });
+                remoteAudio.src = URL.createObjectURL(blob);
+                remoteAudio.play();
+            });
+
+        } else {
+            alert("Galat Code! Wapas jao.");
+            window.location.reload();
+        }
     </script>
 </body>
 </html>

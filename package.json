@@ -1,6 +1,13 @@
 {
+  "name": "my-private-chat",
+  "version": "1.0.0",
+  "description": "Private Chat and Walkie-Talkie",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
-    "express": "^5.2.1",
-    "socket.io": "^4.8.3"
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1"
   }
 }

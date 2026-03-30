@@ -6,19 +6,15 @@ const path = require('path');
 
 app.use(express.static(__dirname));
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
 io.on('connection', (socket) => {
-  console.log('A user connected');
+  console.log('User connected');
 
-  // Text message handle karein
-  socket.on('chat message', (msg) => {
-    io.emit('chat message', msg);
+  // Naam ke saath chat message bhejna
+  socket.on('chat message', (data) => {
+    io.emit('chat message', data); 
   });
 
-  // Voice stream handle karein
+  // Voice stream broadcast karna
   socket.on('voice-stream', (data) => {
     socket.broadcast.emit('voice-stream', data);
   });
